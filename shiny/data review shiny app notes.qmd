@@ -49,3 +49,7 @@ The `data_review1.py` module implements both the input controls for limiting/sel
 
 Within the module, the `Variable` list handles multiple selection using shift and control keys. The `Start Date` control shows a graphical date selector, but has no effect until a day-of-month is chosen. The `Days` control is limited to 366 days following the `Start Date`.
 
+
+```{python}
+
+```
