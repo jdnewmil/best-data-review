@@ -3,12 +3,12 @@
 #import datetime
 import pandas as pd
 import data_review1
+import data_sel
 from shiny import App, ui, reactive
 
 # global data for review
 dta = pd.read_parquet('data/cache/dta.parquet')
 dta.index.name = 'timestamp'
-dta.reset_index(inplace=True)
 dta_info = pd.read_csv('data/config/best_dta_col_info.csv')
 
 
@@ -27,14 +27,22 @@ def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
     """
     # create our ui object
     app_ui = ui.page_fluid(
-        data_review1.create_ui('first', dta, dta_info)
-    )
+        ui.panel_title("BEST Data Review")
+        , ui.navset_tab_card(
+            ui.nav(
+                'Preview'
+                , ui.page_fluid(
+                    data_sel.create_ui('main', dta, dta_info)
+                    , data_review1.create_ui('first')))))
     return app_ui
 
 
 # wrapper function for the server, allows the data
 # to be passed in
-def create_server(dta: pd.DataFrame) -> callable:
+def create_server(
+        dta: pd.DataFrame
+        , dta_info: pd.DataFrame
+    ) -> callable:
     """Top level server factory
 
     Parameters
@@ -45,7 +53,24 @@ def create_server(dta: pd.DataFrame) -> callable:
     def server(input, output, session):
         dtar = reactive.Value(dta)
         dta_infor = reactive.Value(dta_info)
-        data_review1.server('first', dtar, dta_infor)
+        dta_selr = data_sel.server('dta_sel', dtar, dta_infor)
+
+        @reactive.Calc
+        def dtalr():
+            dta_sel1 = dta_selr()
+            print(dta_sel1)
+            return (
+                dta_sel1
+                .melt(
+                    id_vars=['timestamp']
+                    , var_name='variable'
+                    , value_name='value')
+                .dropna())
+
+        data_review1.server(
+            'first'
+            , dtalr=dtalr
+            , dta_infor=dta_infor)
 
     return server
 
@@ -53,5 +78,5 @@ def create_server(dta: pd.DataFrame) -> callable:
 frontend = create_ui(dta, dta_info)
 # a server is a callable (function) invoked when
 # the html widgets send messages back
-myserver = create_server(dta)
+myserver = create_server(dta, dta_info)
 app = App(frontend, myserver)
