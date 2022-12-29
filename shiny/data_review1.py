@@ -25,7 +25,6 @@ def create_plot(data):
         ggplot object rendered for delivery to UI.
     """
     req(0<len(data))
-    print(data)
     plot = (
         ggplot(
             data
@@ -43,51 +42,17 @@ def create_plot(data):
     return plot.draw()
 
 
-def agg_has_non_na(dta: pd.DataFrame, variables: list) -> pd.DataFrame:
-    """Aggregate True if any non-nan data by day.
-
-    Parameters
-    ----------
-    dta : pd.DataFrame
-        Data frame with time index (wide)
-    variables: list of str
-        Names of variables of interest
-
-    Returns
-    -------
-    pd.DataFrame
-        Long daily data frame
-        timestamp: Beginning of day
-        variable: list of names of variables
-        value: True if any non-nan data in this day
-    """
-    has_non_na = lambda x: np.any(x.isna())
-    dtal_non_na = (
-        dta.loc[:, variables]
-        .resample('D')
-        .agg(has_non_na)
-        .reset_index()
-        .melt(
-            id_vars=['timestamp']
-            , var_name='variable'
-            , value_name='value'))
-    return dtal_non_na
-
-
 @module.ui
-def create_ui():
-    """Build user interface for data_review1
+def create_ui() -> ui.TagList:
+    """Build user interface for data_review1.
 
     Returns
     -------
-    ui.page_fluid
+    ui.TagList
         HTML user interface
     """
-    return ui.row(
-        ui.column(
-            12
-            # an output container in which to render a plot
-            , ui.output_plot("line_plot1")))
+    return ui.TagList(
+        ui.output_plot("line_plot1"))
 
 @module.server
 def server(
@@ -100,9 +65,9 @@ def server(
     """Server definition for data_review1 module.
     """
 
-    @output(id="line_plot1") # decorator to link this function to the "plot1" id in the UI
+    @output(id="line_plot1") # decorator to link this function to the "line_plot1" id in the UI
     @render.plot # a decorator to indicate we want the plot renderer
-    def plot_dtal():
+    def line_plot1():
         sub = dtalr()
         dta_info = dta_infor()  # extract data frame from reactive
         sub1 = pd.merge(
@@ -111,6 +76,5 @@ def server(
             , left_on = 'variable'
             , right_on= 'col_names'
         )
-        # sub = sub[sub['variable'].isin(vars)] # use it to create a subset
         plot = create_plot(sub1) # create our plot
         return plot # and return it

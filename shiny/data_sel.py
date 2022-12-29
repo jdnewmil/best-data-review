@@ -1,7 +1,8 @@
 # data_sel.py
 
 import pandas as pd
-from shiny import ui, req, reactive, module, render
+import numpy as np
+from shiny import ui, req, reactive, module
 
 def calc_default_date_parms(dta: pd.DataFrame) -> dict:
     """Identify a default date interval
@@ -20,7 +21,7 @@ def calc_default_date_parms(dta: pd.DataFrame) -> dict:
         `value`: default value (=min)
     """
     dt1 = dta.index.min().floor('D')
-    dtend = dta.index.min().ceil('D')
+    dtend = dta.index.max().ceil('D')
     return {
         'min': dt1
         , 'max': dtend
@@ -38,9 +39,13 @@ def data_select(
     else:
         dt1 = (
             dt_start
-            .tz_localize(dta['timestamp'].dt.tz))
+            .tz_localize(dta.index.tz))
         dt2 = dt1 + pd.Timedelta(value=days, unit='D')
-        selected = dta.loc[dt1:dt2, variables]
+        row_bool = np.logical_and(
+            dt1 <= dta.index
+            , dta.index <= dt2)
+        selected = dta.loc[row_bool, variables]
+        # selected = dta.loc[dt1:dt2, variables]
     return selected
 
 
@@ -123,7 +128,6 @@ def server(
             , variables=variables
             , dt_start=dt_start1
             , days=days1)
-        print(dta_sel)
         return dta_sel
 
     return dta_sel

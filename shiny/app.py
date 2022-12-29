@@ -4,7 +4,8 @@
 import pandas as pd
 import data_review1
 import data_sel
-from shiny import App, ui, reactive
+import data_any1
+from shiny import App, ui, reactive, render
 
 # global data for review
 dta = pd.read_parquet('data/cache/dta.parquet')
@@ -31,9 +32,14 @@ def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
         , ui.navset_tab_card(
             ui.nav(
                 'Preview'
-                , ui.page_fluid(
-                    data_sel.create_ui('main', dta, dta_info)
-                    , data_review1.create_ui('first')))))
+                , data_sel.create_ui(id='main', dta=dta, dta_info=dta_info)
+                , ui.navset_tab_card(
+                    ui.nav(
+                        'Trend'
+                        , data_review1.create_ui(id='first'))
+                    , ui.nav(
+                        'Data Availability'
+                        , data_any1.create_ui(id='data_any_plot'))))))
     return app_ui
 
 
@@ -53,24 +59,33 @@ def create_server(
     def server(input, output, session):
         dtar = reactive.Value(dta)
         dta_infor = reactive.Value(dta_info)
-        dta_selr = data_sel.server('dta_sel', dtar, dta_infor)
+        dta_selr = data_sel.server('main', dtar, dta_infor)
 
         @reactive.Calc
         def dtalr():
             dta_sel1 = dta_selr()
-            print(dta_sel1)
             return (
                 dta_sel1
+                .reset_index()
                 .melt(
                     id_vars=['timestamp']
                     , var_name='variable'
                     , value_name='value')
                 .dropna())
 
+        @output
+        @render.text
+        def test_dtal():
+            dtal = dtalr()
+            return f'dtal size = {dtal.size}'
+
         data_review1.server(
             'first'
             , dtalr=dtalr
             , dta_infor=dta_infor)
+        data_any1.server(
+            'data_any_plot'
+            , dta_selr=dta_selr)
 
     return server
 
