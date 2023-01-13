@@ -1,0 +1,4 @@
+site,subsystem,min_tilt,max_tilt,gcr
+BEST,row2,-50,50,0.3
+BEST,row6,-50,50,0.3
+BEST,row7,-50,50,0.3

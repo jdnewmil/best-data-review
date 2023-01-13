@@ -17,6 +17,6 @@ python src/prep1.py  #
 
 ```bash
 # from the top level directory of this repository
-shiny --host localhost --port 5000 --launch-browser shiny/app
+shiny run --host localhost --port 5000 --launch-browser shiny/app.py
 ```
 
