@@ -35,19 +35,20 @@ def add_solar_geometry(dta: pd.DataFrame, site_info: pd.Series) -> pd.DataFrame:
             'albedo': 'daily_albedo'
             , 'SRRL_albedo': 'daily_SRRL_albedo'
         }))
-    dta['dtm_mid'] = dta.index + pd.Timedelta(seconds=30)
-    dta['date'] = dta['dtm_mid'].dt.floor('D')
-    dta = dta.merge(daily_albedo, left_on='date', right_index=True)
+    ans = dta.copy()
+    ans['dtm_mid'] = ans.index + pd.Timedelta(seconds=30)
+    ans['date'] = ans['dtm_mid'].dt.floor('D')
+    ans = ans.merge(daily_albedo, left_on='date', right_index=True)
     solpos = pvlib.solarposition.get_solarposition(
-        time=dta['dtm_mid']
+        time=ans['dtm_mid']
         , latitude=site_info['latitude']
         , longitude=site_info['longitude']
         , altitude=site_info['elevation'])
-    dta[['solar_apparent_zenith', 'solar_azimuth']] = (
+    ans[['solar_apparent_zenith', 'solar_azimuth']] = (
         solpos[['apparent_zenith', 'azimuth']].values)
-    dta['dni_extra'] = pvlib.irradiance.get_extra_radiation(
-        datetime_or_doy=dta['dtm_mid'].dt.day_of_year)
-    return dta
+    ans['dni_extra'] = pvlib.irradiance.get_extra_radiation(
+        datetime_or_doy=ans['dtm_mid'].dt.day_of_year)
+    return ans
 
 
 def add_array_irradiance(
