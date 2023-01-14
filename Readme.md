@@ -9,6 +9,16 @@ data collected from the National Renewable Energy Laboratory Bifacial Experiment
 Prepare a virtual Python environment based on the supplied `requirements.txt`. This app was developed using a `conda` virtual environment, but a `venv` could possibly be used instead.
 
 ```bash
+conda env create -f environment.yml
+# or
+# pip install -r requirements.txt 
+```
+
+## Download data to review
+
+The `prep1.py` script downloads four csv files and combines them into one `data/cache/dta.parquet` file.
+
+```bash
 # from the top level directory of this repository
 python src/prep1.py  #
 ```
@@ -19,4 +29,3 @@ python src/prep1.py  #
 # from the top level directory of this repository
 shiny run --host localhost --port 5000 --launch-browser shiny/app.py
 ```
-
