@@ -4,7 +4,8 @@
 import pathlib
 import pandas as pd
 import data_review1
-import data_sel
+import data_sel     # variable selection
+import data_selt    # time selection
 import data_any1
 import solar_modeling_calcs as smc
 from shiny import App, ui, reactive, render
@@ -26,8 +27,6 @@ site_info = pd.read_csv(
 sys_info = pd.read_csv(
     cfgdir / 'sys_info.csv'
     , index_col=[0, 1])
-dta = smc.add_solar_geometry(dta, site_info=site_info)
-dta = smc.add_array_irradiance(dta, sys_info=sys_info)
 
 
 def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
@@ -53,7 +52,16 @@ def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
         , ui.navset_tab_card(
             ui.nav(
                 'Preview'
-                , data_sel.create_ui(id='main', dta=dta, dta_info=dta_info)
+                # upper pane (selection controls)
+                , ui.row(
+                    ui.column(
+                        4
+                        , data_sel.create_ui(id='main', dta=dta, dta_info=dta_info))
+                    , ui.column(1)
+                    , ui.column(
+                        3
+                        , *[data_selt.create_ui(id='main', dta=dta)]))
+                # lower pane (tabbed displays)
                 , ui.navset_tab_card(
                     ui.nav(
                         'Trend'
@@ -66,8 +74,7 @@ def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
                         , ui.output_table(id='rendered_site_info'))
                     , ui.nav(
                         'System Info'
-                        , ui.output_table(id='rendered_sys_info'))
-                    , ))))
+                        , ui.output_table(id='rendered_sys_info'))))))
     return app_ui
 
 
@@ -92,7 +99,23 @@ def create_server(
     def server(input, output, session):
         dtar = reactive.Value(dta)
         dta_infor = reactive.Value(dta_info)
-        dta_selr = data_sel.server('main', dtar, dta_infor)
+        dta_selt_raw_r = data_selt.server('main', dtar)  # time filter
+
+        @reactive.Calc
+        def dta_seltr():
+            """Add computed columns to selected dataset.
+
+            Returns
+            -------
+            pd.DataFrame
+                see `smc.add_solar_geometry` and `smc.add_array_irradiance`.
+            """
+            dta_selt_raw = dta_selt_raw_r()
+            dtasel = smc.add_solar_geometry(dta_selt_raw, site_info=site_info)
+            dtasel = smc.add_array_irradiance(dtasel, sys_info=sys_info)
+            return dtasel
+
+        dta_sel_r = data_sel.server('main', dta_seltr, dta_infor)  # variables filter
 
         @reactive.Calc
         def dtalr():
@@ -108,7 +131,7 @@ def create_server(
                 value: float
                     Value of parameter
             """
-            dta_sel1 = dta_selr()
+            dta_sel1 = dta_sel_r()
             return (
                 dta_sel1
                 .reset_index()
@@ -130,7 +153,7 @@ def create_server(
             , dta_infor=dta_infor)
         data_any1.server(
             'data_any_plot'
-            , dta_selr=dta_selr)
+            , dta_selr=dta_sel_r)
 
         @output()
         @render.table(index=True)
