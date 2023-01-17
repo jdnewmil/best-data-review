@@ -6,7 +6,7 @@
 
 if [ -f environment.yml -a -f requirements.txt ]; then
     if conda env export > environment.yml; then
-        if pip freeze > requirements.txt; then
+        if pip list --format=freeze > requirements.txt; then
             echo "updated environment.yml and requirements.txt"
         else
             echo "could not update requirements.txt"
