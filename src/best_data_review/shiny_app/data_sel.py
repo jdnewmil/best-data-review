@@ -1,41 +1,27 @@
 # data_sel.py
 
+import logging
 import pandas as pd
 import numpy as np
 from shiny import ui, req, reactive, module
 
-
-def data_select(
-    dta: pd.DataFrame
-    , variables: list
-) -> pd.DataFrame:
-    return dta.loc[:, variables]
+log = logging.getLogger("best_app")
 
 
 @module.ui
-def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
-    """Build user interface for data_review1
-
-    Parameters
-    ----------
-    dtal : pd.DataFrame
-        Time series data, in wide format:
-        `timestamp`: pd.Timeseries
-        various column names : float
-    dta_info : pd.DataFrame
-        Definitions of variables defined in
+def create_ui():
+    """Build user interface for data_review1.
 
     Returns
     -------
     _type_
         _description_
     """
-    choices = dta_info['col_names'].to_list()
     return ui.TagList(
         ui.input_select(
             "variables"
             , "Variable"
-            , choices=list(choices)
+            , choices=[]
             , multiple=True
             , size=6))
 
@@ -47,8 +33,16 @@ def server(
     , dtar: reactive
     , dta_infor: reactive
 ):
-    """Server definition for data_review1 module.
-    """
+    """Server definition for data_review1 module."""
+    @reactive.Effect
+    def _variables():
+        choices = dta_infor()['col_names'].to_list()
+        log.debug(f"Executing dta_sel._variables++++++++++++++{choices}")
+        ui.update_select(
+            "variables"
+            , choices=choices
+            , session=session)
+
     @reactive.Calc
     def dta_sel():
         req(input.variables())

@@ -1,8 +1,13 @@
 # data_selt.py
 
+
+import logging
 import pandas as pd
 import numpy as np
 from shiny import ui, req, reactive, module
+
+log = logging.getLogger("best_app")
+
 
 def calc_default_date_parms(dta: pd.DataFrame) -> dict:
     """Identify a default date interval
@@ -16,16 +21,20 @@ def calc_default_date_parms(dta: pd.DataFrame) -> dict:
     -------
     dict
         Must contain keys:
-        `min`: minimum of `timestamp` values
-        `max`: maximum of `timestamp` values
-        `value`: default value (=min)
+        'args': list
+            One timestamp, value to mark as selected.
+        'kwargs': dict
+            Contains keys:
+                `min`: minimum of `timestamp` values
+                `max`: maximum of `timestamp` values
     """
     dt1 = dta.index.min().floor('D')
     dtend = dta.index.max().ceil('D')
     return {
-        'min': dt1
-        , 'max': dtend
-        , 'value': dt1}
+        'args': [dt1]
+        , 'kwargs': {
+            'min': dt1
+            , 'max': dtend}}
 
 
 def data_select(
@@ -33,6 +42,7 @@ def data_select(
     , dt_start: pd.Timestamp
     , days: int
 ) -> pd.DataFrame:
+    """Implement time range selection."""
     if days is None:
         selected = dta
     else:
@@ -48,15 +58,8 @@ def data_select(
 
 
 @module.ui
-def create_ui(dta: pd.DataFrame):
-    """Build user interface for data_review1
-
-    Parameters
-    ----------
-    dta : pd.DataFrame
-        Time series data, in wide format:
-        `timestamp`: pd.Timeseries
-        various column names : float
+def create_ui():
+    """Build user interface for data_review1.
 
     Returns
     -------
@@ -67,7 +70,7 @@ def create_ui(dta: pd.DataFrame):
         ui.input_date(
             'dt_start'
             , 'Start Date'
-            , **calc_default_date_parms(dta))
+            , value='2021-08-03')
         , ui.input_numeric(
             'days'
             , 'Days'
@@ -85,6 +88,16 @@ def server(
     , dtar: reactive
 ):
     """Server definition for data_review1 module."""
+    @reactive.Effect()
+    def _dt_start():
+        req(dtar)
+        dta = dtar()
+        ddparms = calc_default_date_parms(dtar())
+        log.debug(f"Executing dta_selt._dt_start++++++++++++++{ddparms}")
+        ui.update_date(
+            'dt_start'
+            , **ddparms['kwargs'])
+
     @reactive.Calc
     def dta_selt():
         req(input.dt_start())

@@ -2,43 +2,24 @@
 
 #import datetime
 import pathlib
+import logging
 import pandas as pd
-import data_review1
-import data_sel     # variable selection
-import data_selt    # time selection
-import data_any1
-import solar_modeling_calcs as smc
+import best_data_review.shiny_app.data_review1 as data_review1
+import best_data_review.shiny_app.data_sel as data_sel     # variable selection
+import best_data_review.shiny_app.data_selt as data_selt    # time selection
+import best_data_review.shiny_app.data_any1 as data_any1
+import best_data_review.shiny_app.solar_modeling_calcs as smc
 from shiny import App, ui, reactive, render
 
 
-prjdir = pathlib.Path(__file__).parent.parent
+prjdir = pathlib.Path('.')
 dtadir = prjdir / 'data'
 cfgdir = dtadir / 'config'
 cachedir = dtadir / 'cache'
+log = logging.getLogger("best_app")
 
-# global data for review
-dta = pd.read_parquet(cachedir / 'dta.parquet')
-dta.index.name = 'timestamp'
-dta_info = pd.read_csv(cfgdir / 'best_dta_col_info.csv')
-site_info = pd.read_csv(
-    cfgdir / 'site_info.csv'
-    , index_col=0
-    ).loc['BEST', :]
-sys_info = pd.read_csv(
-    cfgdir / 'sys_info.csv'
-    , index_col=[0, 1])
-
-
-def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
+def create_ui():
     """Top level UI factory.
-
-    Parameters
-    ----------
-    dta : pd.DataFrame
-        Datetime-indexed data frame of time-series data
-    dta_info : pd.DataFrame
-        Dataframe of descriptive categories for columns in
-        `dta`.
 
     Returns
     -------
@@ -56,11 +37,11 @@ def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
                 , ui.row(
                     ui.column(
                         4
-                        , data_sel.create_ui(id='main', dta=dta, dta_info=dta_info))
+                        , data_sel.create_ui(id='main'))
                     , ui.column(1)
                     , ui.column(
                         3
-                        , *[data_selt.create_ui(id='main', dta=dta)]))
+                        , *[data_selt.create_ui(id='main')]))
                 # lower pane (tabbed displays)
                 , ui.navset_tab_card(
                     ui.nav(
@@ -80,16 +61,8 @@ def create_ui(dta: pd.DataFrame, dta_info: pd.DataFrame):
 
 # wrapper function for the server, allows the data
 # to be passed in
-def create_server(
-        dta: pd.DataFrame
-        , dta_info: pd.DataFrame
-    ) -> callable:
-    """Top level server factory
-
-    Parameters
-    ----------
-    dta : pd.DataFrame
-        Dataframe to review in server
+def create_server() -> callable:
+    """Top level server factory.
 
     Returns
     -------
@@ -97,8 +70,40 @@ def create_server(
         Function to respond to web page activity.
     """
     def server(input, output, session):
-        dtar = reactive.Value(dta)
-        dta_infor = reactive.Value(dta_info)
+        dta_fnamer = reactive.Value(cachedir / 'dta.parquet')
+        dta_info_fnamer = reactive.Value(cfgdir / 'best_dta_col_info.csv')
+        site_info_fnamer = reactive.Value(cfgdir / 'site_info.csv')
+        sys_info_fnamer = reactive.Value(cfgdir / 'sys_info.csv')
+
+        @reactive.file_reader(dta_fnamer)
+        def dtar() -> pd.DataFrame:
+            """Read BEST time series data."""
+            log.debug("Executing dtar++++++++++++++")
+            dta = pd.read_parquet(dta_fnamer())
+            dta.index.name = 'timestamp'
+            return dta
+
+        @reactive.file_reader(dta_info_fnamer)
+        def dta_infor() -> pd.DataFrame:
+            """Read column info."""
+            log.debug("Executing dta_infor++++++++++++++")
+            return pd.read_csv(dta_info_fnamer())
+
+        @reactive.file_reader(site_info_fnamer)
+        def site_infor() -> pd.DataFrame:
+            site_info = pd.read_csv(
+                site_info_fnamer()
+                , index_col=0
+            ).loc['BEST', :]
+            return site_info
+
+        @reactive.file_reader(sys_info_fnamer)
+        def sys_infor() -> pd.DataFrame:
+            sys_info = pd.read_csv(
+                sys_info_fnamer()
+                , index_col=[0, 1])
+            return sys_info
+
         dta_selt_raw_r = data_selt.server('main', dtar)  # time filter
 
         @reactive.Calc
@@ -110,7 +115,10 @@ def create_server(
             pd.DataFrame
                 see `smc.add_solar_geometry` and `smc.add_array_irradiance`.
             """
+            log.debug("Executing dta_seltr++++++++++++++")
             dta_selt_raw = dta_selt_raw_r()
+            site_info = site_infor()
+            sys_info = sys_infor()
             dtasel = smc.add_solar_geometry(dta_selt_raw, site_info=site_info)
             dtasel = smc.add_array_irradiance(dtasel, sys_info=sys_info)
             return dtasel
@@ -131,6 +139,7 @@ def create_server(
                 value: float
                     Value of parameter
             """
+            log.debug("Executing dtalr++++++++++++++")
             dta_sel1 = dta_sel_r()
             return (
                 dta_sel1
@@ -159,18 +168,25 @@ def create_server(
         @render.table(index=True)
         def rendered_site_info():
             return pd.DataFrame({
-                'BEST' : site_info}).T
+                'BEST' : site_infor()}).T
 
         @output()
         @render.table(index=True)
         def rendered_sys_info():
-            return sys_info
+            return sys_infor()
 
     return server
 
-# a ui is effectively an html page
-frontend = create_ui(dta, dta_info)
-# a server is a callable (function) invoked when
-# the html widgets send messages back
-myserver = create_server(dta, dta_info)
-app = App(frontend, myserver)
+
+def best_app():
+    """Wrap app invocation."""
+    # a ui is effectively an html page
+    frontend = create_ui()
+    # a server is a callable (function) invoked when
+    # the html widgets send messages back
+    myserver = create_server()
+    return App(frontend, myserver)
+
+
+if __name__ == '__main__':
+    app = best_app()

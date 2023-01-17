@@ -1,12 +1,13 @@
 """data_review1
 """
-
+import logging
 import pandas as pd
 from plotnine import ggplot, aes, geom_point, theme_set \
     , theme_minimal, theme, element_text, xlab, facet_wrap
 from shiny import ui, req, reactive, module, render
 
 theme_set(theme_minimal())
+log = logging.getLogger("best_app")
 
 
 # utility function to draw a scatter plot
@@ -68,13 +69,13 @@ def server(
     @output(id="line_plot1") # decorator to link this function to the "line_plot1" id in the UI
     @render.plot # a decorator to indicate we want the plot renderer
     def line_plot1():
+        log.debug("Executing data_review1.line_plot1++++++++++++++")
         sub = dtalr()
         dta_info = dta_infor()  # extract data frame from reactive
         sub1 = pd.merge(
             sub
             , dta_info
-            , left_on = 'variable'
-            , right_on= 'col_names'
-        )
+            , left_on='variable'
+            , right_on='col_names')
         plot = create_plot(sub1) # create our plot
-        return plot # and return it
+        return plot  # and return it
