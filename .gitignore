@@ -165,3 +165,6 @@ data/cache
 shiny/data review shiny app notes_files/
 
 /.luarc.json
+**/*_files/**
+**/*.html
+settings.json
