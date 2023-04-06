@@ -32,15 +32,15 @@ def url_fname(best_url_key: str, rawdir: pathlib.Path) -> pathlib.Path:
     """Make local filename for storing BEST data."""
     return rawdir / f'{best_url_key}.csv'
 
-# Define a function to safely read the data
-# If download fails, user will have to identify and then rename
-# or delete the bad file
 def read_best_data(
     best_url_key: str
     , best_url: str
     , rawdir: pathlib.Path
 ):
     """Download data from Duramat Datahub.
+
+    If download fails, user will have to identify and then rename
+    or delete the bad file
 
     Parameters
     ----------

@@ -7,8 +7,8 @@ import best_data_review.bifi_calcs.geometry as bgeom
 
 
 def calc_outboard_sat_sensor_weight(
-    sun_az: pd.Series
-    , sun_el: pd.Series
+    AzSol: pd.Series
+    , HSol: pd.Series
     , height: float
     , offset: float
 ) -> pd.DataFrame:
@@ -16,9 +16,9 @@ def calc_outboard_sat_sensor_weight(
 
     Parameters
     ----------
-    sun_az : pd.Series
-        Azimuth coordinate of sun (radians; 0=north, pi/2=East)
-    sun_el : pd.Series
+    AzSol : pd.Series
+        PVsyst-convention azimuth coordinate of sun (deg; 0=South, 90=West)
+    HSol : pd.Series
         Apparent elevation coordinate of sun (radians; 0=horizon, pi/2=zenith)
     height : float
         Height of bottom of array south edge (m)
@@ -39,21 +39,21 @@ def calc_outboard_sat_sensor_weight(
             Degrees equivalent of phi.
         psi_deg : float
             Degrees equivalent of psi.
-        W0 : float
-            Weighting factor assuming offset is zero (unitless)
         W : float
             Weighting factor assuming specified offset (unitless)
     """
-    dta = pd.DataFrame({'phi': np.acos(bgeom.calc_cosphi(sun_az, sun_el))})
+    dta = pd.DataFrame({
+        'sun_az': np.deg2rad(AzSol + 180.)
+        , 'sun_el': np.deg2rad(HSol)})
     dta = dta.assign(
-        psi=bgeom.calc_psi(
-            phi=dta['phi']
+        phi=lambda df: np.arccos(bgeom.calc_cosphi(df['sun_az'], df['sun_el']))
+        , psi=lambda df: bgeom.calc_psi(
+            phi=df['phi']
             , height=height
             , offset=offset)
-        , phi_deg=np.rad2deg(dta['phi'])
-        , psi_deg=np.rad2deg(dta['psi'])
-        , W0=bgeom.calc_W(dta['phi'])
-        , W=bgeom.calc_W(dta['psi']))
+        , phi_deg=lambda df: np.rad2deg(df['phi'])
+        , psi_deg=lambda df: np.rad2deg(df['psi'])
+        , W=lambda df: bgeom.calc_W(df['psi']))
     return dta
 
 
@@ -69,13 +69,14 @@ def calc_outboard_sat_sensor_irr_pvsyst(
     , BmIncBk: np.array
     , GlobBak: np.array
 ) -> pd.DataFrame:
+    """Implement PVsyst outboard axial down-facing sensor estimation."""
     dta = pd.DataFrame({
         'E_sky_rear': W * DifHor
         , 'E_gnd_rear': (
             W * (GlobGnd * albedo_near - Alb_Inc)
             + (1 - W) * (GlobGnd * albedo_near / GCR - BkVFLss))})
     return dta.assign(
-        E_rear_calc=dta['E_gnd_rear'] + dta['E_sky_rear'] + BmIncBk
-        , odd=dta['E_rear_calc'] < GlobBak
+        E_rear_calc=lambda df: df['E_gnd_rear'] + df['E_sky_rear'] + BmIncBk
+        , odd=lambda df: df['E_rear_calc'] < GlobBak
         , G1=(GlobHor * albedo_near - Alb_Inc)
         , G2=(GlobGnd * albedo_near / GCR - BkVFLss))

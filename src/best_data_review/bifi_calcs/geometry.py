@@ -21,10 +21,10 @@ def calc_cosphi(sun_az: np.array, sun_el: np.array) -> np.array:
     np.array
         Cosine of shade angle (unitless)
     """
-    return np.cos(sun_az) * np.cos(sun_el)
+    return -np.cos(sun_az) * np.cos(sun_el)
 
 
-def calc_psi(phi: np.array, height: np.array, offset: float) -> np.array:
+def calc_psi(phi: np.array, height: float, offset: float) -> np.array:
     """Compute angle between sensor and shade line assuming nonzero offset.
 
     Parameters
@@ -32,7 +32,7 @@ def calc_psi(phi: np.array, height: np.array, offset: float) -> np.array:
     phi : np.array
         Shade angle relative to array edge along tracker axis
         (radians; 0=horizontal)
-    height : np.array
+    height : float
         Height of bottom of array south edge (m)
     offset : float
         Horizontal offset of sensor from shade-casting edge of array (m)
@@ -49,7 +49,7 @@ def calc_psi(phi: np.array, height: np.array, offset: float) -> np.array:
 
 
 def calc_psi_alt(phi: np.array, H: float, L: float) -> np.array:
-    """Compute angle between sensor and shade line w nonzero offset (acos).
+    """Compute angle between sensor and shade line w nonzero offset (arccos).
 
     Parameters
     ----------
@@ -73,10 +73,10 @@ def calc_psi_alt(phi: np.array, H: float, L: float) -> np.array:
     # h_s_phi = H * s_phi
     num = o_s_phi + h_c_phi
     den2 = (
-        o_s_phi ^ 2
+        o_s_phi * o_s_phi
         + 2 * h_c_phi * o_s_phi
-        + H ^ 2)
-    return np.acos(num / np.sqrt(den2))
+        + H * H)
+    return np.arccos(num / np.sqrt(den2))
 
 
 def calc_W(shadeangle: np.array) -> np.array:
@@ -85,7 +85,8 @@ def calc_W(shadeangle: np.array) -> np.array:
     Parameters
     ----------
     shadeangle : np.array
-        Assumed angle of shade line with respect to south horizontal.
+        Assumed angle of shade line with respect to equator-facing
+        horizontal (radians).
 
     Returns
     -------

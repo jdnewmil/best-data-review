@@ -33,8 +33,21 @@ def add_solar_geometry(dta: pd.DataFrame, site_info: pd.Series) -> pd.DataFrame:
         .fillna(method='ffill')
         .rename(columns={
             'albedo': 'daily_albedo'
-            , 'SRRL_albedo': 'daily_SRRL_albedo'
-        }))
+            , 'SRRL_albedo': 'daily_SRRL_albedo'})
+        .assign(
+            daily_albedo=lambda df:
+                df['daily_albedo']
+                .where(
+                    df['daily_albedo']
+                    .lt(1)
+                    , np.nan)
+            , daily_SRRL_albedo=lambda df:
+                df['daily_SRRL_albedo']
+                .where(
+                    df['daily_SRRL_albedo']
+                    .lt(1)
+                    , np.nan)
+                ))
     ans = dta.copy()
     ans['dtm_mid'] = ans.index + pd.Timedelta(seconds=30)
     ans['date'] = ans['dtm_mid'].dt.floor('D')

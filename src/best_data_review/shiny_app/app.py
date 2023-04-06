@@ -1,6 +1,5 @@
-# test.py
+# app.py
 
-#import datetime
 import pathlib
 import logging
 import pandas as pd
@@ -17,6 +16,7 @@ dtadir = prjdir / 'data'
 cfgdir = dtadir / 'config'
 cachedir = dtadir / 'cache'
 log = logging.getLogger("best_app")
+
 
 def create_ui():
     """Top level UI factory.
