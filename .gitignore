@@ -163,3 +163,5 @@ cython_debug/
 data/raw/
 data/cache
 shiny/data review shiny app notes_files/
+
+/.luarc.json
