@@ -168,3 +168,4 @@ shiny/data review shiny app notes_files/
 **/*_files/**
 **/*.html
 settings.json
+data/config/external_data_dirs.csv
