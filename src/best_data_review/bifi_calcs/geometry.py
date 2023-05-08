@@ -1,5 +1,4 @@
-"""Solar modeling functions.
-"""
+"""Solar modeling functions."""
 
 import pandas as pd
 import numpy as np
@@ -24,8 +23,17 @@ def calc_cosphi(sun_az: np.array, sun_el: np.array) -> np.array:
     return -np.cos(sun_az) * np.cos(sun_el)
 
 
-def calc_psi(phi: np.array, height: float, offset: float) -> np.array:
+def calc_psi(
+    phi: np.array
+    , height: float
+    , offset: float
+) -> np.array:
     """Compute angle between sensor and shade line assuming nonzero offset.
+
+    The shade line is assumed to follow a horizontal pv row edge even though
+    we know the row will be tilting. This is an approximation to avoid 3d
+    modeling that assumes there will be roughly equal deviations from the
+    computed angle in the shaded portion of the ground.
 
     Parameters
     ----------
@@ -94,5 +102,3 @@ def calc_W(shadeangle: np.array) -> np.array:
         W weight factor.
     """
     return 0.5 * (1 + np.cos(shadeangle))
-
-
