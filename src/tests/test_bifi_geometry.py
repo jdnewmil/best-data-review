@@ -1,4 +1,5 @@
 # test_bifi_geometry.py
+"""Testing bifi_geometry.py."""
 
 import numpy as np
 import pandas as pd
@@ -7,6 +8,7 @@ import best_data_review.bifi_calcs.geometry as bgeom
 
 
 def test_calc_cosphi():
+    """Test calc_cosphi."""
     dta1 = pd.DataFrame({
         'sun_az': [np.pi, 2 * np.pi / 3]
         , 'sun_el': [np.pi / 6, np.pi / 6]})
@@ -15,9 +17,11 @@ def test_calc_cosphi():
         , sun_el=dta1['sun_el'])
     assert np.allclose(ans, [0.8660254, 0.4330127])
 
+
 psi_trials = [
     (1.5, 1., (0.39498093, 1.4817163))
     , (1.5, -1., (0.7537516, 2.46451003))]
+
 
 @pytest.mark.parametrize(
     "height,offset,expected"
