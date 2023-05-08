@@ -1,13 +1,15 @@
-"""Solar modeling functions.
-"""
+"""Solar modeling functions."""
 
 import pandas as pd
 import numpy as np
 import pvlib
 
 
-def add_solar_geometry(dta: pd.DataFrame, site_info: pd.Series) -> pd.DataFrame:
-    """Augment dta with calculated solar position columns
+def add_solar_geometry(
+    dta: pd.DataFrame
+    , site_info: pd.Series
+) -> pd.DataFrame:
+    """Augment dta with calculated solar position columns.
 
     Parameters
     ----------
@@ -16,7 +18,6 @@ def add_solar_geometry(dta: pd.DataFrame, site_info: pd.Series) -> pd.DataFrame:
         interval. Timestamps are assumed to be at regular intervals.
     site_info : pd.Series
         Series of site parameters including:
-        
 
     Returns
     -------
@@ -46,8 +47,7 @@ def add_solar_geometry(dta: pd.DataFrame, site_info: pd.Series) -> pd.DataFrame:
                 .where(
                     df['daily_SRRL_albedo']
                     .lt(1)
-                    , np.nan)
-                ))
+                    , np.nan)))
     ans = dta.copy()
     ans['dtm_mid'] = ans.index + pd.Timedelta(seconds=30)
     ans['date'] = ans['dtm_mid'].dt.floor('D')
